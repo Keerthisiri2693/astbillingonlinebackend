@@ -52,11 +52,16 @@ const signup = async (req, res) => {
 };
 
 // Login
+
 const login = async (req, res) => {
   try {
+    console.log("Login Request:", req.body);
+
     const { email, password } = req.body;
 
     const admin = await Admin.findOne({ email });
+
+    console.log("Admin:", admin);
 
     if (!admin) {
       return res.status(404).json({
@@ -65,17 +70,11 @@ const login = async (req, res) => {
       });
     }
 
-    if (admin.status === "Inactive") {
-      return res.status(401).json({
-        success: false,
-        message: "Account Disabled",
-      });
-    }
+    console.log("Stored Password:", admin.password);
 
-    const match = await bcrypt.compare(
-      password,
-      admin.password
-    );
+    const match = await bcrypt.compare(password, admin.password);
+
+    console.log("Password Match:", match);
 
     if (!match) {
       return res.status(401).json({
@@ -89,31 +88,25 @@ const login = async (req, res) => {
         id: admin._id,
         email: admin.email,
       },
-      process.env.JWT_SECRET || "adminsecret",
-      {
-        expiresIn: "7d",
-      }
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Login Successful",
       token,
-      data: {
-        id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-      },
+      data: admin,
     });
+
   } catch (err) {
-    res.status(500).json({
+    console.error("LOGIN ERROR:", err);
+
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      error: err.message,
     });
   }
 };
-
 
 // Get All Admins
 const getAdmins = async (req, res) => {
